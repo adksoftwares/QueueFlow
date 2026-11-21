@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Join the Queue — QueueFlow</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body class="queue-page">
+  <header class="top">
+    <a class="brand" href="/">queue<span>flow</span><i>.</i></a>
+    <span class="pill">CUSTOMER PORTAL</span>
+  </header>
+
+  <main class="public-wrap">
+    <div class="public-head">
+      <p class="eyebrow">YOUR VISIT, MADE SIMPLE</p>
+      <h1 id="businessName">Loading service…</h1>
+      <p id="businessMeta" class="muted"></p>
+    </div>
+
+    <div id="nextAlertBanner" class="next-alert hidden" role="status" aria-live="assertive"></div>
+
+    <div class="public-grid">
+      <div class="public-col">
+        <section class="join-card">
+          <p class="eyebrow">JOIN THE QUEUE</p>
+          <h2>Get your token</h2>
+          <form id="joinForm">
+            <label>Your name
+              <input name="customer_name" required placeholder="Full name">
+            </label>
+            <label>Phone number
+              <input name="customer_phone" placeholder="Optional">
+            </label>
+            <label id="locationField" class="hidden">Location / branch
+              <select name="location_id" id="locationSelect">
+                <option value="">All / Main location</option>
+              </select>
+            </label>
+            <label>Select service
+              <select name="service_id" id="serviceSelect">
+                <option value="">General service</option>
+              </select>
+            </label>
+            <label>Preferred appointment time (optional)
+              <input name="appointment_at" type="datetime-local">
+            </label>
+            <label>Notes
+              <textarea name="notes" rows="2" placeholder="Anything we should know?"></textarea>
+            </label>
+            <p id="joinError" class="error"></p>
+            <button class="btn full" type="submit">Get my token →</button>
+          </form>
+          <div id="ticketResult"></div>
+        </section>
+      </div>
+
+      <div class="public-col">
+        <section class="live-card">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">LIVE UPDATES</p>
+              <h2>Current queue</h2>
+            </div>
+            <div class="row-btns">
+              <button id="alertSoundBtn" class="btn ghost small-btn" type="button">🔔 Alerts: On</button>
+              <span class="live">● LIVE</span>
+            </div>
+          </div>
+          <div class="queue-stats four-col">
+            <div><small>WAITING</small><b id="waitingCount">—</b></div>
+            <div><small>CALLED</small><b id="calledCount">—</b></div>
+            <div><small>SERVING</small><b id="servingCount">—</b></div>
+            <div><small>COMPLETED</small><b id="completedCount">—</b></div>
+          </div>
+          <div id="publicQueue"></div>
+        </section>
+
+        <section class="join-card lookup-card">
+          <p class="eyebrow">TOKEN STATUS</p>
+          <h3>Check your token</h3>
+          <form id="lookupForm" class="lookup-form">
+            <input name="token" placeholder="e.g. Q001" required>
+            <button class="btn" type="submit">Check</button>
+          </form>
+          <div id="lookupResult"></div>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/queue.js"></script>
+</body>
+</html>

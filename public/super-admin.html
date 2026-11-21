@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Super Admin Control Console — QueueFlow</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body class="dash sa-body">
+  <aside class="sidebar sa-sidebar">
+    <a class="brand" href="/super-admin.html">queue<span>flow</span><i>.</i></a>
+    <p class="side-label">SUPER ADMIN</p>
+    <nav class="side-nav" id="saNav">
+      <button class="side-link is-active" data-view="overview" type="button">▦ &nbsp; Overview</button>
+      <button class="side-link" data-view="accounts" type="button">◎ &nbsp; Accounts</button>
+      <button class="side-link" data-view="businesses" type="button">▣ &nbsp; Businesses</button>
+      <button class="side-link" data-view="security" type="button">◈ &nbsp; Security &amp; Logins</button>
+      <button class="side-link" data-view="audit" type="button">▤ &nbsp; Audit Logs</button>
+      <button class="side-link" data-view="mfa" type="button">★ &nbsp; MFA &amp; Security</button>
+      <a href="/dashboard.html">↗ &nbsp; Business App</a>
+    </nav>
+    <div class="side-bottom">
+      <span id="saAdminEmail"></span>
+      <button id="saLogout" class="btn side-logout full" type="button">Logout</button>
+    </div>
+  </aside>
+
+  <main class="dash-main">
+    <header class="dash-head">
+      <div>
+        <p class="eyebrow">PLATFORM GOVERNANCE &amp; SECURITY</p>
+        <h1 id="saViewTitle">Platform Overview</h1>
+        <p class="muted" id="saViewSubtitle">System-wide accounts, businesses, sessions, and security telemetry.</p>
+      </div>
+      <div class="business-actions">
+        <button class="btn ghost" id="saRefreshBtn" type="button">↻ Refresh</button>
+        <button class="btn" id="saNewAccountBtn" type="button">＋ Create account</button>
+        <button class="btn ghost" id="saTopLogout" type="button">Logout</button>
+      </div>
+    </header>
+
+    <div id="saGlobalError" class="error"></div>
+    <div id="saGlobalSuccess" class="success-msg"></div>
+
+    <!-- OVERVIEW -->
+    <section id="view-overview" class="sa-view">
+      <div id="saMetricsGrid" class="sa-kpi-grid"></div>
+      <div class="sa-two-col">
+        <div class="dash-section">
+          <div class="panel-head">
+            <h3>Last registered accounts</h3>
+          </div>
+          <div id="saLastRegistered"></div>
+        </div>
+        <div class="dash-section">
+          <div class="panel-head">
+            <h3>Recent login &amp; security events</h3>
+          </div>
+          <div id="saRecentLogins"></div>
+        </div>
+      </div>
+      <div class="dash-section">
+        <div class="panel-head">
+          <h3>Business usage overview</h3>
+        </div>
+        <div id="saBusinessUsage" class="table-wrap"></div>
+      </div>
+    </section>
+
+    <!-- ACCOUNTS -->
+    <section id="view-accounts" class="sa-view hidden">
+      <div class="dash-section">
+        <div class="sa-toolbar">
+          <input id="accSearch" placeholder="Search name, email, or phone…">
+          <select id="accRoleFilter" aria-label="Filter by role">
+            <option value="all">All roles</option>
+            <option value="owner">Business Owner</option>
+            <option value="super_admin">Super Admin</option>
+          </select>
+          <select id="accStatusFilter" aria-label="Filter by status">
+            <option value="all">All statuses</option>
+            <option value="active">Active</option>
+            <option value="suspended">Suspended</option>
+            <option value="deleted">Deleted / Deactivated</option>
+          </select>
+        </div>
+        <div id="saAccountsTable" class="table-wrap"></div>
+        <div id="saAccountsPager" class="sa-pager"></div>
+      </div>
+    </section>
+
+    <!-- BUSINESSES -->
+    <section id="view-businesses" class="sa-view hidden">
+      <div class="dash-section">
+        <div class="sa-toolbar">
+          <input id="bizSearch" placeholder="Search business name, code, or owner…">
+          <select id="bizStatusFilter" aria-label="Filter by business status">
+            <option value="all">All statuses</option>
+            <option value="active">Active</option>
+            <option value="paused">Paused</option>
+            <option value="suspended">Suspended</option>
+          </select>
+        </div>
+        <div id="saBusinessesTable" class="table-wrap"></div>
+        <div id="saBusinessesPager" class="sa-pager"></div>
+      </div>
+    </section>
+
+    <!-- SECURITY & LOGINS -->
+    <section id="view-security" class="sa-view hidden">
+      <div class="sa-notice">
+        <strong>Privacy &amp; Security Monitoring Notice:</strong>
+        Login timestamps, IP addresses, device summaries, and session IDs are recorded strictly for security auditing and unauthorized-access prevention.
+      </div>
+      <div class="dash-section">
+        <div class="panel-head">
+          <h3>Currently active sessions</h3>
+        </div>
+        <div id="saSessionsTable" class="table-wrap"></div>
+      </div>
+      <div class="dash-section">
+        <div class="panel-head">
+          <h3>Login &amp; security activity log</h3>
+        </div>
+        <div class="sa-toolbar">
+          <input id="secSearch" placeholder="Search email, IP, or device…">
+          <select id="secTypeFilter" aria-label="Filter by event type">
+            <option value="all">All events</option>
+            <option value="login_success">login_success</option>
+            <option value="login_failed">login_failed</option>
+            <option value="mfa_verified">mfa_verified</option>
+            <option value="mfa_failed">mfa_failed</option>
+            <option value="suspicious_activity">suspicious_activity</option>
+            <option value="password_reset_requested">password_reset_requested</option>
+            <option value="password_reset_completed">password_reset_completed</option>
+            <option value="password_changed">password_changed</option>
+            <option value="session_revoked">session_revoked</option>
+            <option value="logout">logout</option>
+          </select>
+          <select id="secSuccessFilter" aria-label="Filter by outcome">
+            <option value="all">All outcomes</option>
+            <option value="1">Success</option>
+            <option value="0">Failed / Blocked</option>
+          </select>
+        </div>
+        <div id="saSecurityTable" class="table-wrap"></div>
+        <div id="saSecurityPager" class="sa-pager"></div>
+      </div>
+    </section>
+
+    <!-- AUDIT LOGS -->
+    <section id="view-audit" class="sa-view hidden">
+      <div class="dash-section">
+        <div class="sa-toolbar">
+          <input id="audSearch" placeholder="Search action, entity ID, actor email, or details…">
+          <select id="audActionFilter" aria-label="Filter by action category">
+            <option value="all">All actions</option>
+            <option value="super_admin.">Super Admin actions</option>
+            <option value="auth.">Authentication actions</option>
+            <option value="business.">Business actions</option>
+            <option value="ticket.">Queue / Ticket actions</option>
+          </select>
+        </div>
+        <div id="saAuditTable" class="table-wrap"></div>
+        <div id="saAuditPager" class="sa-pager"></div>
+      </div>
+    </section>
+
+    <!-- MFA & SECURITY SETTINGS -->
+    <section id="view-mfa" class="sa-view hidden">
+      <div class="dash-section">
+        <p class="eyebrow">MULTI-FACTOR AUTHENTICATION</p>
+        <h2>Super Admin TOTP Protection</h2>
+        <div id="saMfaStatus"></div>
+        <div id="saMfaSetupArea"></div>
+      </div>
+      <div class="dash-section">
+        <p class="eyebrow">CREDENTIALS</p>
+        <h2>Change Super Admin password</h2>
+        <form id="saChangePwForm" class="inline-grid account-pw-form">
+          <label>Current password<input name="current_password" type="password" required></label>
+          <label>New password (6+ chars)<input name="new_password" type="password" minlength="6" required></label>
+          <div class="inline-submit">
+            <button class="btn" type="submit">Update password</button>
+            <span id="saPwMsg" class="muted"></span>
+          </div>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <!-- CREATE ACCOUNT MODAL -->
+  <dialog id="saCreateAccountDialog">
+    <form id="saCreateAccountForm">
+      <button type="button" class="close" id="saCreateAccountClose" aria-label="Close">×</button>
+      <p class="eyebrow">PROVISION ACCOUNT</p>
+      <h2>Create user account</h2>
+      <label>Full name<input name="name" required></label>
+      <label>Email address<input name="email" type="email" required></label>
+      <label>Phone<input name="phone" placeholder="Optional"></label>
+      <div class="form-row-2">
+        <label>Role
+          <select name="role" id="saNewAccountRole">
+            <option value="owner">Business Owner</option>
+          </select>
+        </label>
+        <label>Temporary password (6+ chars)<input name="password" type="password" minlength="6" required></label>
+      </div>
+      <label id="saCreateBizField">Business / studio name (optional)<input name="business_name" placeholder="Creates an initial business workspace for this owner"></label>
+      <label class="checkbox-row">
+        <input type="checkbox" name="must_change_password" checked>
+        <span>Require password change on next login</span>
+      </label>
+      <p id="saCreateAccountError" class="error"></p>
+      <button class="btn full" type="submit">Create account</button>
+    </form>
+  </dialog>
+
+  <!-- DETAIL MODAL (Account or Business) -->
+  <dialog id="saDetailDialog" class="manage-dialog">
+    <div id="saDetailContent"></div>
+  </dialog>
+
+  <!-- FORCE PASSWORD MODAL -->
+  <dialog id="saForcePwDialog">
+    <form id="saForcePwForm">
+      <p class="eyebrow">SECURITY ACTION REQUIRED</p>
+      <h2>Change your password</h2>
+      <p class="muted">Please update your Super Admin password before continuing.</p>
+      <label>Current password<input name="current_password" type="password" required></label>
+      <label>New password (6+ chars)<input name="new_password" type="password" minlength="6" required></label>
+      <p id="saForcePwError" class="error"></p>
+      <button class="btn full" type="submit">Save new password</button>
+    </form>
+  </dialog>
+
+  <script src="/pw-toggle.js"></script>
+  <script src="/super-admin.js"></script>
+</body>
+</html>

@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Business Workspace — QueueFlow</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body class="dash">
+  <aside class="sidebar">
+    <a class="brand" href="/">queue<span>flow</span><i>.</i></a>
+    <p class="side-label">WORKSPACE</p>
+    <nav class="side-nav">
+      <a class="active" href="#businesses">▣ &nbsp; Workspaces</a>
+      <a href="#account">◎ &nbsp; Account</a>
+      <a href="/super-admin.html" id="adminLink" class="hidden">★ &nbsp; Super Admin</a>
+    </nav>
+    <div class="side-bottom">
+      <span id="sideName"></span>
+      <button id="logout" class="btn side-logout full" type="button">Logout</button>
+    </div>
+  </aside>
+
+  <main class="dash-main">
+    <header class="dash-head" id="businesses">
+      <div>
+        <p class="eyebrow">BUSINESS CONTROL CENTRE</p>
+        <h1>Welcome, <span id="welcomeName">there</span>.</h1>
+        <p class="muted">Keep your service moving smoothly.</p>
+      </div>
+      <div class="business-actions">
+        <button class="btn" id="newBusiness" type="button">＋ Add business</button>
+        <button class="btn ghost" id="topLogout" type="button">Logout</button>
+      </div>
+    </header>
+
+    <div id="businessList" class="business-list"></div>
+
+    <section id="account" class="dash-section">
+      <p class="eyebrow">ACCOUNT SETTINGS</p>
+      <h2>Your account</h2>
+      <p id="accountEmail" class="muted"></p>
+      <form id="changePasswordForm" class="inline-grid account-pw-form">
+        <label>Current password<input name="current_password" type="password" required autocomplete="current-password"></label>
+        <label>New password (6+ chars)<input name="new_password" type="password" minlength="6" required autocomplete="new-password"></label>
+        <div class="inline-submit">
+          <button class="btn ghost small-btn" type="submit">Update password</button>
+          <span id="pwMsg" class="muted"></span>
+        </div>
+      </form>
+    </section>
+  </main>
+
+  <dialog id="forcePasswordDialog">
+    <form id="forcePasswordForm">
+      <p class="eyebrow">SECURITY ACTION REQUIRED</p>
+      <h2>Change your password</h2>
+      <p class="muted">An administrator requires you to set a new password before accessing your workspace.</p>
+      <label>Current password<input name="current_password" type="password" required autocomplete="current-password"></label>
+      <label>New password (6+ chars)<input name="new_password" type="password" minlength="6" required autocomplete="new-password"></label>
+      <p id="forcePwError" class="error"></p>
+      <button class="btn full" type="submit">Save new password</button>
+    </form>
+  </dialog>
+
+  <dialog id="businessDialog">
+    <form id="businessForm">
+      <button type="button" class="close" id="businessClose" aria-label="Close">×</button>
+      <p class="eyebrow">NEW WORKSPACE</p>
+      <h2>Add a business</h2>
+      <label>Business name<input name="name" required></label>
+      <div class="form-row-2">
+        <label>Category
+          <select name="category">
+            <option>Clinic</option>
+            <option>Salon</option>
+            <option>Repair Centre</option>
+            <option>Public Office</option>
+            <option>Education</option>
+            <option>Other</option>
+          </select>
+        </label>
+        <label>Timezone (IANA)<input name="timezone" id="businessTimezone" value="UTC" placeholder="e.g. Asia/Kolkata"></label>
+      </div>
+      <label>Description<textarea name="description" rows="2"></textarea></label>
+      <div class="form-row-2">
+        <label>Address<input name="address"></label>
+        <label>Phone<input name="phone"></label>
+      </div>
+      <p id="businessError" class="error"></p>
+      <button class="btn full" type="submit">Create business</button>
+    </form>
+  </dialog>
+
+  <dialog id="manageDialog" class="manage-dialog">
+    <div id="manageContent"></div>
+  </dialog>
+
+  <dialog id="shareDialog" class="share-dialog">
+    <div id="shareContent"></div>
+  </dialog>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/pw-toggle.js"></script>
+  <script src="/dashboard.js"></script>
+</body>
+</html>

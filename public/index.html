@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>QueueFlow — Smart Service Flow</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header class="top">
+    <a class="brand" href="/">queue<span>flow</span><i>.</i></a>
+    <nav>
+      <a href="#solutions">Solutions</a>
+      <a href="#how">How it works</a>
+      <button class="btn ghost" id="loginOpen" type="button">Sign in</button>
+      <button class="btn" id="registerOpen" type="button">Start free</button>
+      <a class="btn hidden" id="workspaceLink" href="/dashboard.html">Open workspace</a>
+      <button class="btn ghost hidden" id="homeLogout" type="button">Logout</button>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div>
+        <p class="eyebrow">THE SMARTER WAY TO SERVE</p>
+        <h1>Less waiting.<br><em>More doing.</em></h1>
+        <p class="lead">
+          A simple, modern queue and appointment platform for service businesses.
+          Give every customer clarity, and every team control.
+        </p>
+        <div class="actions">
+          <button class="btn" id="heroStart" type="button">Create your business <b>→</b></button>
+          <a href="#how" class="textlink">See how it works</a>
+        </div>
+        <div class="trust">
+          <span>✓ Digital tokens</span>
+          <span>✓ Live queue updates</span>
+          <span>✓ Appointment requests</span>
+        </div>
+      </div>
+
+      <div class="queue-preview">
+        <div class="preview-top">
+          <div>
+            <small>LIVE SERVICE QUEUE</small>
+            <h3>Customer flow</h3>
+          </div>
+          <span class="live">● LIVE</span>
+        </div>
+        <div class="queue-count">
+          <div><small>WAITING</small><b>08</b></div>
+          <div><small>NOW SERVING</small><b>Q014</b></div>
+        </div>
+        <div class="ticket-row serving">
+          <span>Q014</span>
+          <div><b>Now serving</b><small>Consultation · Counter 02</small></div>
+          <strong>→</strong>
+        </div>
+        <div class="ticket-row">
+          <span>Q015</span>
+          <div><b>Customer</b><small>Document service</small></div>
+          <small>Next</small>
+        </div>
+        <div class="ticket-row">
+          <span>Q016</span>
+          <div><b>Customer</b><small>General inquiry</small></div>
+          <small>Waiting</small>
+        </div>
+        <div class="preview-bottom">Updated automatically · No app required</div>
+      </div>
+    </section>
+
+    <section class="metrics">
+      <div><b>01</b><span>One digital queue</span></div>
+      <div><b>02</b><span>Live customer updates</span></div>
+      <div><b>03</b><span>Online + walk-in</span></div>
+      <div><b>04</b><span>Business control</span></div>
+    </section>
+
+    <section id="solutions" class="section">
+      <p class="eyebrow">MADE FOR EVERYDAY SERVICES</p>
+      <h2>One platform.<br><em>Many service counters.</em></h2>
+      <div class="features">
+        <article><i>✚</i><h3>Clinics &amp; healthcare</h3><p>Organise reception queues and appointment requests.</p></article>
+        <article><i>✂</i><h3>Salons &amp; wellness</h3><p>Manage walk-ins, service durations and customer flow.</p></article>
+        <article><i>⌂</i><h3>Repair &amp; service centres</h3><p>Give customers a clear token and predictable process.</p></article>
+        <article><i>▤</i><h3>Public service desks</h3><p>Coordinate counters and reduce crowding at busy desks.</p></article>
+      </div>
+    </section>
+
+    <section id="how" class="workflow">
+      <p class="eyebrow">A BETTER CUSTOMER JOURNEY</p>
+      <h2>Three steps to a calmer queue.</h2>
+      <div class="steps">
+        <div><b>01</b><h3>Set up</h3><p>Add your business, locations, services and team members.</p></div>
+        <div><b>02</b><h3>Issue tokens</h3><p>Customers join online or receive a walk-in token.</p></div>
+        <div><b>03</b><h3>Serve smarter</h3><p>Call the next customer and update the queue live.</p></div>
+      </div>
+    </section>
+
+    <footer>
+      <b>queueflow.</b>
+      <span>Make every visit flow better. · Security notice: login timestamps, IP addresses &amp; browser metadata are logged for account protection.</span>
+      <small>© 2026 QueueFlow</small>
+    </footer>
+  </main>
+
+  <dialog id="authDialog">
+    <form id="authForm">
+      <button type="button" class="close" id="authClose" aria-label="Close">×</button>
+      <p class="eyebrow">YOUR BUSINESS WORKSPACE</p>
+      <h2 id="authTitle">Welcome back</h2>
+
+      <div id="credentialsFields">
+        <div id="nameField" class="field hidden">
+          <label>Your name<input name="name" id="nameInput" autocomplete="name"></label>
+        </div>
+        <div class="field">
+          <label>Email address<input name="email" id="emailInput" type="email" autocomplete="email" required></label>
+        </div>
+        <div class="field">
+          <label>Password<input name="password" id="passwordInput" type="password" minlength="6" autocomplete="current-password" required></label>
+        </div>
+      </div>
+
+      <div id="mfaFields" class="hidden">
+        <p class="muted">Enter the 6-digit code from your authenticator app or a recovery code.</p>
+        <div class="field">
+          <label>Verification code<input name="code" id="mfaCodeInput" autocomplete="one-time-code" placeholder="123456 or ABCD-1234"></label>
+        </div>
+      </div>
+
+      <div id="resetFields" class="hidden">
+        <p class="muted">Enter the one-time reset token provided by your administrator and choose a new password.</p>
+        <div class="field">
+          <label>Reset token<input name="token" id="resetTokenInput" placeholder="Paste reset token"></label>
+        </div>
+        <div class="field">
+          <label>New password (6+ chars)<input name="new_password" id="resetPassInput" type="password" minlength="6" autocomplete="new-password"></label>
+        </div>
+      </div>
+
+      <button class="btn full" id="authSubmit" type="submit">Sign in</button>
+      <p id="authSwitch" class="switch">New to QueueFlow? <a href="#">Create account</a></p>
+      <p id="authExtraLink" class="switch"><a href="#" id="openResetLink">Have a password reset token?</a></p>
+      <p class="privacy-note">For account security, sign-in timestamps, IP addresses, and browser/session details are logged.</p>
+      <p id="authError" class="error"></p>
+      <p id="authSuccess" class="success-msg"></p>
+    </form>
+  </dialog>
+
+  <script src="/pw-toggle.js"></script>
+  <script src="/app.js"></script>
+</body>
+</html>
