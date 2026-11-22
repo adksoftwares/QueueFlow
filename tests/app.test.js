@@ -614,6 +614,19 @@ describe("QueueFlow & Super Admin Control System Verification", () => {
     assert.equal(checkInResult.res.status, 200);
     assert.equal(checkInResult.data.ticket.status, "waiting");
 
+    const invalidStaffRole = await apiFetch(baseUrl, `/api/businesses/${biz.id}/staff`, {
+      method: "POST",
+      cookie: ownerLogin.cookie,
+      body: { name: "Invalid Role", email: "invalidrole@example.com", role: "owner" }
+    });
+    assert.equal(invalidStaffRole.res.status, 400);
+    const oversizedStaffName = await apiFetch(baseUrl, `/api/businesses/${biz.id}/staff`, {
+      method: "POST",
+      cookie: ownerLogin.cookie,
+      body: { name: "N".repeat(101), email: "longname@example.com", role: "staff" }
+    });
+    assert.equal(oversizedStaffName.res.status, 400);
+
     const staff = (
       await apiFetch(baseUrl, `/api/businesses/${biz.id}/staff`, {
         method: "POST",
