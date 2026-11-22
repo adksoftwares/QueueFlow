@@ -123,7 +123,7 @@ function createTicketRouter({ db, io, middleware }) {
                  called_at = ?,
                  started_at = ?,
                  completed_at = ?
-             WHERE id = ?`
+             WHERE id = ? AND status = ?`
           )
           .run(
             nextStatus,
