@@ -161,9 +161,15 @@ function createPublicRouter({ db, io, middleware, maybeRateLimit }) {
       try {
         const token = String(req.params.token || "").trim().toUpperCase();
         const lookupKey = String(req.query.key || "").trim();
-        if (!/^[A-Z0-9_-]{3,24}$/.test(token) || lookupKey.length < 32 || lookupKey.length > 128) {
+        // Ticket tracking keys are generated as 32 random bytes encoded in base64url (43 chars).
+        // Keep the validation strict to avoid unnecessary hash/database work on malformed input.
+        if (!/^[A-Z0-9_-]{3,24}$/.test(token) || !/^[A-Za-z0-9_-]{43}$/.test(lookupKey)) {
+          res.setHeader("Cache-Control", "no-store");
+          res.setHeader("Referrer-Policy", "no-referrer");
           return res.status(404).json({ error: "Token not found" });
         }
+        res.setHeader("Cache-Control", "no-store");
+        res.setHeader("Referrer-Policy", "no-referrer");
         const lookupKeyHash = sha256Hex(lookupKey);
         const tz = req.business.timezone || "UTC";
         const today = dateStrInTimeZone(new Date(), tz);
