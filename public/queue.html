@@ -81,7 +81,8 @@
           <p class="eyebrow">TOKEN STATUS</p>
           <h3>Check your token</h3>
           <form id="lookupForm" class="lookup-form">
-            <input name="token" placeholder="e.g. Q001" required>
+            <input name="token" aria-label="Ticket token" placeholder="Token (e.g. Q001)" autocomplete="off" required>
+            <input name="lookup_key" type="password" aria-label="Private tracking key" placeholder="Private tracking key" autocomplete="off" required>
             <button class="btn" type="submit">Check</button>
           </form>
           <div id="lookupResult"></div>

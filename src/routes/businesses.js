@@ -333,8 +333,20 @@ function createBusinessRouter({ db, io, middleware }) {
       if (!name || !String(name).trim()) {
         return res.status(400).json({ error: "Service name required" });
       }
-      const duration = Math.max(5, Math.round(Number(duration_minutes) || 15));
-      const parsedPrice = Math.max(0, Number(price) || 0);
+      const parsedDuration = duration_minutes === undefined ? 15 : Number(duration_minutes);
+      if (!Number.isFinite(parsedDuration) || parsedDuration < 5 || parsedDuration > 1440) {
+        return res.status(400).json({ error: "Duration must be between 5 and 1440 minutes" });
+      }
+      const parsedPrice = price === undefined ? 0 : Number(price);
+      if (!Number.isFinite(parsedPrice) || parsedPrice < 0) {
+        return res.status(400).json({ error: "Price must be a valid non-negative number" });
+      }
+      const cleanServiceName = String(name).trim();
+      const cleanDescription = String(description || "").trim();
+      if (cleanServiceName.length > 100 || cleanDescription.length > 1000) {
+        return res.status(400).json({ error: "Service name or description is too long" });
+      }
+      const duration = Math.round(parsedDuration);
       const sid = uuid();
 
       await db
@@ -345,8 +357,8 @@ function createBusinessRouter({ db, io, middleware }) {
         .run(
           sid,
           req.business.id,
-          String(name).trim(),
-          String(description || "").trim(),
+          cleanServiceName,
+          cleanDescription,
           duration,
           parsedPrice,
           new Date().toISOString()
@@ -370,12 +382,13 @@ function createBusinessRouter({ db, io, middleware }) {
       const x = req.body || {};
       const nextName = x.name !== undefined ? String(x.name).trim() : s.name;
       if (!nextName) return res.status(400).json({ error: "Service name required" });
+      if (nextName.length > 100) return res.status(400).json({ error: "Service name must be 100 characters or fewer" });
 
       let nextDuration = s.duration_minutes;
       if (x.duration_minutes !== undefined) {
         const parsed = Number(x.duration_minutes);
-        if (!Number.isFinite(parsed) || parsed < 5) {
-          return res.status(400).json({ error: "Duration must be at least 5 minutes" });
+        if (!Number.isFinite(parsed) || parsed < 5 || parsed > 1440) {
+          return res.status(400).json({ error: "Duration must be between 5 and 1440 minutes" });
         }
         nextDuration = Math.round(parsed);
       }
@@ -397,7 +410,7 @@ function createBusinessRouter({ db, io, middleware }) {
         )
         .run(
           nextName,
-          x.description !== undefined ? String(x.description).trim() : s.description,
+          x.description !== undefined ? String(x.description).trim().slice(0, 1000) : s.description,
           nextDuration,
           nextPrice,
           x.is_active === undefined ? s.is_active : x.is_active ? 1 : 0,
@@ -435,14 +448,25 @@ function createBusinessRouter({ db, io, middleware }) {
         return res.status(403).json({ error: "Business is suspended by Super Admin" });
       }
       const { name, email, role, counter_label } = req.body || {};
-      if (!name || !String(name).trim()) {
+      const cleanName = String(name || "").trim();
+      if (!cleanName) {
         return res.status(400).json({ error: "Staff name required" });
       }
+      if (cleanName.length > 100) {
+        return res.status(400).json({ error: "Staff name must be 100 characters or fewer" });
+      }
       const cleanEmail = String(email || "").toLowerCase().trim();
-      if (cleanEmail && !isValidEmail(cleanEmail)) {
+      if (cleanEmail.length > 254 || (cleanEmail && !isValidEmail(cleanEmail))) {
         return res.status(400).json({ error: "Invalid staff email" });
       }
-      const cleanRole = STAFF_ROLES.has(role) ? role : "staff";
+      if (role !== undefined && !STAFF_ROLES.has(role)) {
+        return res.status(400).json({ error: "Invalid staff role" });
+      }
+      const cleanCounter = String(counter_label || "").trim();
+      if (cleanCounter.length > 50) {
+        return res.status(400).json({ error: "Counter label must be 50 characters or fewer" });
+      }
+      const cleanRole = role || "staff";
       const linkedUser = cleanEmail
         ? await db.prepare("SELECT id FROM users WHERE email = ?").get(cleanEmail)
         : null;
@@ -458,10 +482,10 @@ function createBusinessRouter({ db, io, middleware }) {
             sid,
             req.business.id,
             linkedUser ? linkedUser.id : null,
-            String(name).trim(),
+            cleanName,
             cleanEmail,
             cleanRole,
-            String(counter_label || "").trim(),
+            cleanCounter,
             new Date().toISOString()
           );
       } catch (e) {
@@ -497,12 +521,20 @@ function createBusinessRouter({ db, io, middleware }) {
       const x = req.body || {};
       const nextName = x.name !== undefined ? String(x.name).trim() : s.name;
       if (!nextName) return res.status(400).json({ error: "Staff name required" });
+      if (nextName.length > 100) return res.status(400).json({ error: "Staff name must be 100 characters or fewer" });
 
       const nextEmail = x.email !== undefined ? String(x.email).toLowerCase().trim() : s.email;
-      if (nextEmail && !isValidEmail(nextEmail)) {
+      if (nextEmail.length > 254 || (nextEmail && !isValidEmail(nextEmail))) {
         return res.status(400).json({ error: "Invalid staff email" });
       }
-      const nextRole = x.role !== undefined ? (STAFF_ROLES.has(x.role) ? x.role : s.role) : s.role;
+      if (x.role !== undefined && !STAFF_ROLES.has(x.role)) {
+        return res.status(400).json({ error: "Invalid staff role" });
+      }
+      const nextRole = x.role !== undefined ? x.role : s.role;
+      const nextCounter = x.counter_label !== undefined ? String(x.counter_label).trim() : s.counter_label;
+      if (nextCounter.length > 50) {
+        return res.status(400).json({ error: "Counter label must be 50 characters or fewer" });
+      }
       const nextActive = x.is_active === undefined ? s.is_active : x.is_active ? 1 : 0;
       const linkedUser = nextEmail
         ? await db.prepare("SELECT id FROM users WHERE email = ?").get(nextEmail)
@@ -520,7 +552,7 @@ function createBusinessRouter({ db, io, middleware }) {
             nextEmail,
             linkedUser ? linkedUser.id : nextEmail === "" ? null : s.user_id,
             nextRole,
-            x.counter_label !== undefined ? String(x.counter_label).trim() : s.counter_label,
+            nextCounter,
             nextActive,
             s.id
           );

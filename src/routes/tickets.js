@@ -80,7 +80,7 @@ function createTicketRouter({ db, io, middleware }) {
       const nowIso = now.toISOString();
       const today = dateStrInTimeZone(now, tz);
 
-      await withTransaction(db, async (tx) => {
+      const statusUpdated = await withTransaction(db, async (tx) => {
         let nextToken = t.token;
         let nextQueueDate = t.queue_date;
         let nextCheckedInAt = t.checked_in_at;
@@ -112,7 +112,7 @@ function createTicketRouter({ db, io, middleware }) {
           nextCompletedAt = nowIso;
         }
 
-        await tx
+        const updateResult = await tx
           .prepare(
             `UPDATE tickets
              SET status = ?,
@@ -123,7 +123,7 @@ function createTicketRouter({ db, io, middleware }) {
                  called_at = ?,
                  started_at = ?,
                  completed_at = ?
-             WHERE id = ?`
+             WHERE id = ? AND status = ?`
           )
           .run(
             nextStatus,
@@ -134,9 +134,17 @@ function createTicketRouter({ db, io, middleware }) {
             nextCalledAt,
             nextStartedAt,
             nextCompletedAt,
-            t.id
+            t.id,
+            t.status
           );
+        return Number(updateResult.changes || 0) > 0;
       });
+
+      if (!statusUpdated) {
+        return res.status(409).json({
+          error: "Ticket status changed by another operation. Refresh and try again."
+        });
+      }
 
       await audit(
         db,
@@ -174,14 +182,18 @@ function createTicketRouter({ db, io, middleware }) {
       const nowIso = now.toISOString();
       const today = dateStrInTimeZone(now, tz);
 
-      await withTransaction(db, async (tx) => {
+      const checkedIn = await withTransaction(db, async (tx) => {
         const nextQueueDate = today;
         const nextToken =
           t.queue_date === today ? t.token : await nextTokenInTx(tx, t.business_id, today);
-        await tx
-          .prepare("UPDATE tickets SET status = 'waiting', queue_date = ?, token = ?, checked_in_at = ? WHERE id = ?")
+        const result = await tx
+          .prepare("UPDATE tickets SET status = 'waiting', queue_date = ?, token = ?, checked_in_at = ? WHERE id = ? AND status = 'scheduled'")
           .run(nextQueueDate, nextToken, nowIso, t.id);
+        return Number(result.changes || 0) > 0;
       });
+      if (!checkedIn) {
+        return res.status(409).json({ error: "Appointment was changed by another operation. Refresh and try again." });
+      }
 
       await audit(db, req.user.id, "ticket.check_in", t.id, null, req.ip);
       await emitBusinessUpdate(io, db, t.business_id);
@@ -227,17 +239,18 @@ function createTicketRouter({ db, io, middleware }) {
             `SELECT * FROM tickets
              WHERE business_id = ? AND status = 'waiting' ${locationClause}
              ORDER BY COALESCE(checked_in_at, created_at) ASC
-             LIMIT 1`
+             LIMIT 1${tx.kind === "postgres" ? " FOR UPDATE SKIP LOCKED" : ""}`
           )
           .get(...params);
 
         if (!nextRow) return null;
 
-        await tx
+        const updateResult = await tx
           .prepare(
-            "UPDATE tickets SET status = 'called', called_at = ?, staff_id = COALESCE(CAST(? AS TEXT), staff_id) WHERE id = ?"
+            "UPDATE tickets SET status = 'called', called_at = ?, staff_id = COALESCE(CAST(? AS TEXT), staff_id) WHERE id = ? AND status = 'waiting'"
           )
           .run(now, assignStaffId, nextRow.id);
+        if (Number(updateResult.changes || 0) === 0) return null;
 
         return tx.prepare("SELECT * FROM tickets WHERE id = ?").get(nextRow.id);
       });

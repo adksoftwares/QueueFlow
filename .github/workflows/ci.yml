@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main, master]
+  push:
+    branches: [main, master, "upgrade/**"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: queueflow-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Syntax-check server and scripts
+        run: |
+          find src scripts -type f -name "*.js" -print0 | xargs -0 -n1 node --check
+      - name: Syntax-check browser JavaScript
+        run: |
+          find public -type f -name "*.js" -print0 | xargs -0 -n1 node --check
+      - name: Run integration tests
+        run: npm test

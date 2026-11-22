@@ -556,6 +556,19 @@ describe("QueueFlow & Super Admin Control System Verification", () => {
         body: { name: "Branch B" }
       })
     ).data.location;
+    const invalidServicePrice = await apiFetch(baseUrl, `/api/businesses/${biz.id}/services`, {
+      method: "POST",
+      cookie: ownerLogin.cookie,
+      body: { name: "Invalid Price", price: "not-a-number" }
+    });
+    assert.equal(invalidServicePrice.res.status, 400);
+    const invalidServiceDuration = await apiFetch(baseUrl, `/api/businesses/${biz.id}/services`, {
+      method: "POST",
+      cookie: ownerLogin.cookie,
+      body: { name: "Invalid Duration", duration_minutes: 1441 }
+    });
+    assert.equal(invalidServiceDuration.res.status, 400);
+
     const svc = (
       await apiFetch(baseUrl, `/api/businesses/${biz.id}/services`, {
         method: "POST",
@@ -563,6 +576,86 @@ describe("QueueFlow & Super Admin Control System Verification", () => {
         body: { name: "Consultation", duration_minutes: 20, price: 25 }
       })
     ).data.service;
+    const oversizedCustomerName = await apiFetch(baseUrl, `/api/public/${biz.public_code}/tickets`, {
+      method: "POST",
+      body: { customer_name: "C".repeat(101), service_id: svc.id, location_id: locA.id }
+    });
+    assert.equal(oversizedCustomerName.res.status, 400);
+    const oversizedCustomerNotes = await apiFetch(baseUrl, `/api/public/${biz.public_code}/tickets`, {
+      method: "POST",
+      body: { customer_name: "Valid Guest", notes: "N".repeat(501), service_id: svc.id }
+    });
+    assert.equal(oversizedCustomerNotes.res.status, 400);
+    const oversizedCustomerPhone = await apiFetch(baseUrl, `/api/public/${biz.public_code}/tickets`, {
+      method: "POST",
+      body: { customer_name: "Valid Guest", customer_phone: "1".repeat(31), service_id: svc.id }
+    });
+    assert.equal(oversizedCustomerPhone.res.status, 400);
+
+    // Appointment lifecycle smoke coverage: scheduled creation then owner cancellation.
+    const appointment = await apiFetch(baseUrl, `/api/public/${biz.public_code}/tickets`, {
+      method: "POST",
+      body: {
+        customer_name: "Scheduled Guest",
+        service_id: svc.id,
+        location_id: locA.id,
+        appointment_at: "2030-05-01T14:30"
+      }
+    });
+    assert.equal(appointment.res.status, 201);
+    assert.equal(appointment.data.ticket.status, "scheduled");
+    const appointmentDetails = await apiFetch(baseUrl, `/api/businesses/${biz.id}`, {
+      cookie: ownerLogin.cookie
+    });
+    const appointmentRow = appointmentDetails.data.appointments.find(
+      (row) => row.token === appointment.data.ticket.token
+    );
+    assert.ok(appointmentRow?.id, "scheduled appointment should appear in the owner appointment list");
+    const cancelledAppointment = await apiFetch(baseUrl, `/api/tickets/${appointmentRow.id}/status`, {
+      method: "POST",
+      cookie: ownerLogin.cookie,
+      body: { status: "cancelled" }
+    });
+    assert.equal(cancelledAppointment.res.status, 200);
+    assert.equal(cancelledAppointment.data.ticket.status, "cancelled");
+
+    const checkInAppointment = await apiFetch(baseUrl, `/api/public/${biz.public_code}/tickets`, {
+      method: "POST",
+      body: {
+        customer_name: "Check-in Guest",
+        service_id: svc.id,
+        location_id: locA.id,
+        appointment_at: "2030-05-02T14:30"
+      }
+    });
+    assert.equal(checkInAppointment.res.status, 201);
+    const checkInDetails = await apiFetch(baseUrl, `/api/businesses/${biz.id}`, {
+      cookie: ownerLogin.cookie
+    });
+    const checkInRow = checkInDetails.data.appointments.find(
+      (row) => row.token === checkInAppointment.data.ticket.token
+    );
+    assert.ok(checkInRow?.id, "scheduled appointment should be visible for check-in");
+    const checkInResult = await apiFetch(baseUrl, `/api/tickets/${checkInRow.id}/check-in`, {
+      method: "POST",
+      cookie: ownerLogin.cookie
+    });
+    assert.equal(checkInResult.res.status, 200);
+    assert.equal(checkInResult.data.ticket.status, "waiting");
+
+    const invalidStaffRole = await apiFetch(baseUrl, `/api/businesses/${biz.id}/staff`, {
+      method: "POST",
+      cookie: ownerLogin.cookie,
+      body: { name: "Invalid Role", email: "invalidrole@example.com", role: "owner" }
+    });
+    assert.equal(invalidStaffRole.res.status, 400);
+    const oversizedStaffName = await apiFetch(baseUrl, `/api/businesses/${biz.id}/staff`, {
+      method: "POST",
+      cookie: ownerLogin.cookie,
+      body: { name: "N".repeat(101), email: "longname@example.com", role: "staff" }
+    });
+    assert.equal(oversizedStaffName.res.status, 400);
+
     const staff = (
       await apiFetch(baseUrl, `/api/businesses/${biz.id}/staff`, {
         method: "POST",
@@ -647,13 +740,25 @@ describe("QueueFlow & Super Admin Control System Verification", () => {
 
     const b2Lookup = await apiFetch(
       baseUrl,
-      `/api/public/${biz.public_code}/tickets/${b2.data.ticket.token}`
+      `/api/public/${biz.public_code}/tickets/${b2.data.ticket.token}`,
+      { headers: { "X-Ticket-Lookup-Key": b2.data.ticket.lookup_key } }
     );
     assert.equal(b2Lookup.res.status, 200);
     assert.equal(b2Lookup.data.ticket.position_ahead, 0);
     assert.equal(b2Lookup.data.ticket.is_next, true);
     assert.equal(b2Lookup.data.ticket.current_active?.token, callB1.data.ticket.token);
     assert.equal(b2Lookup.data.ticket.current_active?.status, "called");
+    const deniedLookup = await apiFetch(
+      baseUrl,
+      `/api/public/${biz.public_code}/tickets/${b2.data.ticket.token}`,
+      { headers: { "X-Ticket-Lookup-Key": "x".repeat(43) } }
+    );
+    assert.equal(deniedLookup.res.status, 404);
+    const missingKeyLookup = await apiFetch(
+      baseUrl,
+      `/api/public/${biz.public_code}/tickets/${b2.data.ticket.token}`
+    );
+    assert.equal(missingKeyLookup.res.status, 404);
 
     // 30-minute advance alert: 5-token 15-min clinic scenario
     const locClinic = (
@@ -684,7 +789,8 @@ describe("QueueFlow & Super Admin Control System Verification", () => {
     }
     const check5Before = await apiFetch(
       baseUrl,
-      `/api/public/${biz.public_code}/tickets/${t5List[4].token}`
+      `/api/public/${biz.public_code}/tickets/${t5List[4].token}`,
+      { headers: { "X-Ticket-Lookup-Key": t5List[4].lookup_key } }
     );
     assert.equal(check5Before.data.ticket.estimated_wait_minutes, 60);
     assert.equal(check5Before.data.ticket.alert_30m, false);
@@ -706,7 +812,8 @@ describe("QueueFlow & Super Admin Control System Verification", () => {
     }
     const check5AfterT2 = await apiFetch(
       baseUrl,
-      `/api/public/${biz.public_code}/tickets/${t5List[4].token}`
+      `/api/public/${biz.public_code}/tickets/${t5List[4].token}`,
+      { headers: { "X-Ticket-Lookup-Key": t5List[4].lookup_key } }
     );
     assert.equal(check5AfterT2.data.ticket.tickets_ahead, 2);
     assert.equal(check5AfterT2.data.ticket.estimated_wait_minutes, 30);

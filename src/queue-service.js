@@ -1,4 +1,5 @@
 const { v4: uuid } = require("uuid");
+const crypto = require("crypto");
 const { withTransaction } = require("./db");
 const {
   dateStrInTimeZone,
@@ -291,8 +292,21 @@ async function createTicket(db, b, body, source, allowStaffAssign = false) {
     appointment_at
   } = body || {};
 
-  if (!customer_name || !String(customer_name).trim()) {
+  const cleanCustomerName = String(customer_name || "").trim();
+  const cleanCustomerPhone = String(customer_phone || "").trim();
+  const cleanNotes = String(notes || "").trim();
+
+  if (!cleanCustomerName) {
     return { error: "Customer name required" };
+  }
+  if (cleanCustomerName.length > 100) {
+    return { error: "Customer name must be 100 characters or fewer" };
+  }
+  if (cleanCustomerPhone.length > 30) {
+    return { error: "Customer phone must be 30 characters or fewer" };
+  }
+  if (cleanNotes.length > 500) {
+    return { error: "Notes must be 500 characters or fewer" };
   }
 
   if (service_id) {
@@ -340,15 +354,17 @@ async function createTicket(db, b, body, source, allowStaffAssign = false) {
   }
 
   const tid = uuid();
+  const lookupKey = crypto.randomBytes(32).toString("base64url");
+  const lookupKeyHash = crypto.createHash("sha256").update(lookupKey).digest("hex");
   const ticket = await withTransaction(db, async (tx) => {
     const token = await nextTokenInTx(tx, b.id, queueDate);
     await tx
       .prepare(
         `INSERT INTO tickets (
            id, business_id, location_id, service_id, staff_id,
-           token, queue_date, customer_name, customer_phone, notes,
+           token, lookup_key_hash, queue_date, customer_name, customer_phone, notes,
            status, source, appointment_at, created_at
-         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       )
       .run(
         tid,
@@ -357,10 +373,11 @@ async function createTicket(db, b, body, source, allowStaffAssign = false) {
         service_id || null,
         resolvedStaffId,
         token,
+        lookupKeyHash,
         queueDate,
-        String(customer_name).trim().slice(0, 100),
-        String(customer_phone || "").trim().slice(0, 30),
-        String(notes || "").trim().slice(0, 500),
+        cleanCustomerName,
+        cleanCustomerPhone,
+        cleanNotes,
         ticketStatus,
         ticketSource,
         normalizedAppointmentAt,
@@ -369,7 +386,7 @@ async function createTicket(db, b, body, source, allowStaffAssign = false) {
     return tx.prepare("SELECT * FROM tickets WHERE id = ?").get(tid);
   });
 
-  return { ticket };
+  return { ticket, lookupKey };
 }
 
 async function emitBusinessUpdate(io, db, businessId) {
