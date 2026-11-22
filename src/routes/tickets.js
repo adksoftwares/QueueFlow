@@ -182,14 +182,18 @@ function createTicketRouter({ db, io, middleware }) {
       const nowIso = now.toISOString();
       const today = dateStrInTimeZone(now, tz);
 
-      await withTransaction(db, async (tx) => {
+      const checkedIn = await withTransaction(db, async (tx) => {
         const nextQueueDate = today;
         const nextToken =
           t.queue_date === today ? t.token : await nextTokenInTx(tx, t.business_id, today);
-        await tx
-          .prepare("UPDATE tickets SET status = 'waiting', queue_date = ?, token = ?, checked_in_at = ? WHERE id = ?")
+        const result = await tx
+          .prepare("UPDATE tickets SET status = 'waiting', queue_date = ?, token = ?, checked_in_at = ? WHERE id = ? AND status = 'scheduled'")
           .run(nextQueueDate, nextToken, nowIso, t.id);
+        return Number(result.changes || 0) > 0;
       });
+      if (!checkedIn) {
+        return res.status(409).json({ error: "Appointment was changed by another operation. Refresh and try again." });
+      }
 
       await audit(db, req.user.id, "ticket.check_in", t.id, null, req.ip);
       await emitBusinessUpdate(io, db, t.business_id);
@@ -241,11 +245,12 @@ function createTicketRouter({ db, io, middleware }) {
 
         if (!nextRow) return null;
 
-        await tx
+        const updateResult = await tx
           .prepare(
-            "UPDATE tickets SET status = 'called', called_at = ?, staff_id = COALESCE(CAST(? AS TEXT), staff_id) WHERE id = ?"
+            "UPDATE tickets SET status = 'called', called_at = ?, staff_id = COALESCE(CAST(? AS TEXT), staff_id) WHERE id = ? AND status = 'waiting'"
           )
           .run(now, assignStaffId, nextRow.id);
+        if (Number(updateResult.changes || 0) === 0) return null;
 
         return tx.prepare("SELECT * FROM tickets WHERE id = ?").get(nextRow.id);
       });
