@@ -647,13 +647,18 @@ describe("QueueFlow & Super Admin Control System Verification", () => {
 
     const b2Lookup = await apiFetch(
       baseUrl,
-      `/api/public/${biz.public_code}/tickets/${b2.data.ticket.token}`
+      `/api/public/${biz.public_code}/tickets/${b2.data.ticket.token}?key=${encodeURIComponent(b2.data.ticket.lookup_key)}`
     );
     assert.equal(b2Lookup.res.status, 200);
     assert.equal(b2Lookup.data.ticket.position_ahead, 0);
     assert.equal(b2Lookup.data.ticket.is_next, true);
     assert.equal(b2Lookup.data.ticket.current_active?.token, callB1.data.ticket.token);
     assert.equal(b2Lookup.data.ticket.current_active?.status, "called");
+    const deniedLookup = await apiFetch(
+      baseUrl,
+      `/api/public/${biz.public_code}/tickets/${b2.data.ticket.token}?key=${encodeURIComponent("x".repeat(43))}`
+    );
+    assert.equal(deniedLookup.res.status, 404);
 
     // 30-minute advance alert: 5-token 15-min clinic scenario
     const locClinic = (
@@ -684,7 +689,7 @@ describe("QueueFlow & Super Admin Control System Verification", () => {
     }
     const check5Before = await apiFetch(
       baseUrl,
-      `/api/public/${biz.public_code}/tickets/${t5List[4].token}`
+      `/api/public/${biz.public_code}/tickets/${t5List[4].token}?key=${encodeURIComponent(t5List[4].lookup_key)}`
     );
     assert.equal(check5Before.data.ticket.estimated_wait_minutes, 60);
     assert.equal(check5Before.data.ticket.alert_30m, false);
@@ -706,7 +711,7 @@ describe("QueueFlow & Super Admin Control System Verification", () => {
     }
     const check5AfterT2 = await apiFetch(
       baseUrl,
-      `/api/public/${biz.public_code}/tickets/${t5List[4].token}`
+      `/api/public/${biz.public_code}/tickets/${t5List[4].token}?key=${encodeURIComponent(t5List[4].lookup_key)}`
     );
     assert.equal(check5AfterT2.data.ticket.tickets_ahead, 2);
     assert.equal(check5AfterT2.data.ticket.estimated_wait_minutes, 30);
