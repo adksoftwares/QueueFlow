@@ -659,6 +659,11 @@ describe("QueueFlow & Super Admin Control System Verification", () => {
       `/api/public/${biz.public_code}/tickets/${b2.data.ticket.token}?key=${encodeURIComponent("x".repeat(43))}`
     );
     assert.equal(deniedLookup.res.status, 404);
+    const missingKeyLookup = await apiFetch(
+      baseUrl,
+      `/api/public/${biz.public_code}/tickets/${b2.data.ticket.token}`
+    );
+    assert.equal(missingKeyLookup.res.status, 404);
 
     // 30-minute advance alert: 5-token 15-min clinic scenario
     const locClinic = (
