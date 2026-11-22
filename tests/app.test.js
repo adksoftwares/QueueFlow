@@ -556,6 +556,19 @@ describe("QueueFlow & Super Admin Control System Verification", () => {
         body: { name: "Branch B" }
       })
     ).data.location;
+    const invalidServicePrice = await apiFetch(baseUrl, `/api/businesses/${biz.id}/services`, {
+      method: "POST",
+      cookie: ownerLogin.cookie,
+      body: { name: "Invalid Price", price: "not-a-number" }
+    });
+    assert.equal(invalidServicePrice.res.status, 400);
+    const invalidServiceDuration = await apiFetch(baseUrl, `/api/businesses/${biz.id}/services`, {
+      method: "POST",
+      cookie: ownerLogin.cookie,
+      body: { name: "Invalid Duration", duration_minutes: 1441 }
+    });
+    assert.equal(invalidServiceDuration.res.status, 400);
+
     const svc = (
       await apiFetch(baseUrl, `/api/businesses/${biz.id}/services`, {
         method: "POST",
