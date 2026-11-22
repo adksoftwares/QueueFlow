@@ -563,6 +563,22 @@ describe("QueueFlow & Super Admin Control System Verification", () => {
         body: { name: "Consultation", duration_minutes: 20, price: 25 }
       })
     ).data.service;
+    const oversizedCustomerName = await apiFetch(baseUrl, `/api/public/${biz.public_code}/tickets`, {
+      method: "POST",
+      body: { customer_name: "C".repeat(101), service_id: svc.id, location_id: locA.id }
+    });
+    assert.equal(oversizedCustomerName.res.status, 400);
+    const oversizedCustomerNotes = await apiFetch(baseUrl, `/api/public/${biz.public_code}/tickets`, {
+      method: "POST",
+      body: { customer_name: "Valid Guest", notes: "N".repeat(501), service_id: svc.id }
+    });
+    assert.equal(oversizedCustomerNotes.res.status, 400);
+    const oversizedCustomerPhone = await apiFetch(baseUrl, `/api/public/${biz.public_code}/tickets`, {
+      method: "POST",
+      body: { customer_name: "Valid Guest", customer_phone: "1".repeat(31), service_id: svc.id }
+    });
+    assert.equal(oversizedCustomerPhone.res.status, 400);
+
     // Appointment lifecycle smoke coverage: scheduled creation then owner cancellation.
     const appointment = await apiFetch(baseUrl, `/api/public/${biz.public_code}/tickets`, {
       method: "POST",
