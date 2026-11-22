@@ -3,6 +3,7 @@ const code = new URLSearchParams(location.search).get("code") || "";
 
 let selectedLocationId = new URLSearchParams(location.search).get("location_id") || "";
 let activeLookupToken = "";
+let activeLookupKey = "";
 let soundAlertsEnabled = true;
 let audioCtx = null;
 let prevTicketSnapshot = null;
@@ -14,11 +15,12 @@ function getTokenStorageKey() {
   return `queueflow_token_${String(code || "").toUpperCase()}`;
 }
 
-function saveTrackedToken(token) {
+function saveTrackedToken(token, lookupKey = "") {
   activeLookupToken = token || "";
+  activeLookupKey = lookupKey || "";
   try {
     if (activeLookupToken) {
-      localStorage.setItem(getTokenStorageKey(), activeLookupToken);
+      localStorage.setItem(getTokenStorageKey(), JSON.stringify({ token: activeLookupToken, key: activeLookupKey }));
     } else {
       localStorage.removeItem(getTokenStorageKey());
     }
@@ -29,7 +31,16 @@ function saveTrackedToken(token) {
 
 function loadTrackedToken() {
   try {
-    return localStorage.getItem(getTokenStorageKey()) || "";
+    const stored = localStorage.getItem(getTokenStorageKey()) || "";
+    if (!stored) return "";
+    try {
+      const parsed = JSON.parse(stored);
+      activeLookupKey = parsed.key || "";
+      return parsed.token || "";
+    } catch {
+      activeLookupKey = "";
+      return stored;
+    }
   } catch {
     return "";
   }
@@ -268,7 +279,7 @@ async function refreshLookup() {
   }
   try {
     const d = await api(
-      `/api/public/${encodeURIComponent(code)}/tickets/${encodeURIComponent(activeLookupToken)}`
+      `/api/public/${encodeURIComponent(code)}/tickets/${encodeURIComponent(activeLookupToken)}?key=${encodeURIComponent(activeLookupKey)}`
     );
     const t = d.ticket;
     evaluateQueueAlerts(t);
@@ -306,7 +317,7 @@ async function refreshLookup() {
 
     if ($("#clearTrackedToken")) {
       $("#clearTrackedToken").onclick = () => {
-        saveTrackedToken("");
+        saveTrackedToken("", "");
         prevTicketSnapshot = null;
         lastAlertKey = "";
         bannerDismissedKey = "";
@@ -383,6 +394,8 @@ async function init() {
   if (activeLookupToken) {
     const tokenInput = $("#lookupForm input[name='token']");
     if (tokenInput) tokenInput.value = activeLookupToken;
+    const keyInput = $("#lookupForm input[name='lookup_key']");
+    if (keyInput) keyInput.value = activeLookupKey;
     await refreshLookup();
   }
 
@@ -429,7 +442,7 @@ $("#joinForm").onsubmit = async (e) => {
       <span>Private tracking key: <strong>${esc(d.ticket.lookup_key)}</strong></span>
       <span>${esc(apptText)}</span>
     </div>`;
-    saveTrackedToken(d.ticket.token);
+    saveTrackedToken(d.ticket.token, d.ticket.lookup_key);
     prevTicketSnapshot = null;
     lastAlertKey = "";
     bannerDismissedKey = "";
@@ -447,9 +460,11 @@ $("#lookupForm").onsubmit = async (e) => {
   e.preventDefault();
   unlockAudio();
   maybeRequestNotifications();
-  const token = String(new FormData(e.target).get("token") || "").trim().toUpperCase();
-  if (!token) return;
-  saveTrackedToken(token);
+  const fd = new FormData(e.target);
+  const token = String(fd.get("token") || "").trim().toUpperCase();
+  const lookupKey = String(fd.get("lookup_key") || "").trim();
+  if (!token || !lookupKey) return;
+  saveTrackedToken(token, lookupKey);
   prevTicketSnapshot = null;
   lastAlertKey = "";
   bannerDismissedKey = "";
