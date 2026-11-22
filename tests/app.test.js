@@ -590,6 +590,30 @@ describe("QueueFlow & Super Admin Control System Verification", () => {
     assert.equal(cancelledAppointment.res.status, 200);
     assert.equal(cancelledAppointment.data.ticket.status, "cancelled");
 
+    const checkInAppointment = await apiFetch(baseUrl, `/api/public/${biz.public_code}/tickets`, {
+      method: "POST",
+      body: {
+        customer_name: "Check-in Guest",
+        service_id: svc.id,
+        location_id: locA.id,
+        appointment_at: "2030-05-02T14:30"
+      }
+    });
+    assert.equal(checkInAppointment.res.status, 201);
+    const checkInDetails = await apiFetch(baseUrl, `/api/businesses/${biz.id}`, {
+      cookie: ownerLogin.cookie
+    });
+    const checkInRow = checkInDetails.data.appointments.find(
+      (row) => row.token === checkInAppointment.data.ticket.token
+    );
+    assert.ok(checkInRow?.id, "scheduled appointment should be visible for check-in");
+    const checkInResult = await apiFetch(baseUrl, `/api/tickets/${checkInRow.id}/check-in`, {
+      method: "POST",
+      cookie: ownerLogin.cookie
+    });
+    assert.equal(checkInResult.res.status, 200);
+    assert.equal(checkInResult.data.ticket.status, "waiting");
+
     const staff = (
       await apiFetch(baseUrl, `/api/businesses/${biz.id}/staff`, {
         method: "POST",
