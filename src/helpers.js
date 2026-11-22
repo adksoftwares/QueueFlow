@@ -223,8 +223,9 @@ async function audit(
         String(userAgent || "").slice(0, 300),
         new Date().toISOString()
       );
-  } catch {
-    // Audit logging should not crash primary flows
+  } catch (err) {
+    // Keep the primary operation available, but make audit failures visible to operators.
+    console.error("Audit log write failed:", String(err?.code || err?.name || "unknown error"));
   }
 }
 
@@ -261,8 +262,9 @@ async function recordSecurityEvent(
         details ? JSON.stringify(details) : null,
         new Date().toISOString()
       );
-  } catch {
-    // Security logging should never crash request flow
+  } catch (err) {
+    // Security log failures must not crash the request, but must be observable.
+    console.error("Security event log write failed:", String(err?.code || err?.name || "unknown error"));
   }
 }
 
