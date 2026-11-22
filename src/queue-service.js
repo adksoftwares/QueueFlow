@@ -292,8 +292,21 @@ async function createTicket(db, b, body, source, allowStaffAssign = false) {
     appointment_at
   } = body || {};
 
-  if (!customer_name || !String(customer_name).trim()) {
+  const cleanCustomerName = String(customer_name || "").trim();
+  const cleanCustomerPhone = String(customer_phone || "").trim();
+  const cleanNotes = String(notes || "").trim();
+
+  if (!cleanCustomerName) {
     return { error: "Customer name required" };
+  }
+  if (cleanCustomerName.length > 100) {
+    return { error: "Customer name must be 100 characters or fewer" };
+  }
+  if (cleanCustomerPhone.length > 30) {
+    return { error: "Customer phone must be 30 characters or fewer" };
+  }
+  if (cleanNotes.length > 500) {
+    return { error: "Notes must be 500 characters or fewer" };
   }
 
   if (service_id) {
@@ -362,9 +375,9 @@ async function createTicket(db, b, body, source, allowStaffAssign = false) {
         token,
         lookupKeyHash,
         queueDate,
-        String(customer_name).trim().slice(0, 100),
-        String(customer_phone || "").trim().slice(0, 30),
-        String(notes || "").trim().slice(0, 500),
+        cleanCustomerName,
+        cleanCustomerPhone,
+        cleanNotes,
         ticketStatus,
         ticketSource,
         normalizedAppointmentAt,
