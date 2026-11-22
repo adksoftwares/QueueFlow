@@ -227,7 +227,7 @@ function createTicketRouter({ db, io, middleware }) {
             `SELECT * FROM tickets
              WHERE business_id = ? AND status = 'waiting' ${locationClause}
              ORDER BY COALESCE(checked_in_at, created_at) ASC
-             LIMIT 1`
+             LIMIT 1${tx.kind === "postgres" ? " FOR UPDATE SKIP LOCKED" : ""}`
           )
           .get(...params);
 

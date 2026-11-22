@@ -1,6 +1,6 @@
 const express = require("express");
 const QRCode = require("qrcode");
-const { dateStrInTimeZone } = require("../helpers");
+const { dateStrInTimeZone, sha256Hex } = require("../helpers");
 const { queue, stats, createTicket, emitBusinessUpdate } = require("../queue-service");
 
 function buildPublicShortUrl(req, code, locationId = "") {
@@ -139,6 +139,7 @@ function createPublicRouter({ db, io, middleware, maybeRateLimit }) {
         res.status(201).json({
           ticket: {
             token: t.ticket.token,
+            lookup_key: t.lookupKey,
             status: t.ticket.status,
             queue_date: t.ticket.queue_date,
             location_id: t.ticket.location_id,
@@ -159,6 +160,11 @@ function createPublicRouter({ db, io, middleware, maybeRateLimit }) {
     async (req, res, next) => {
       try {
         const token = String(req.params.token || "").trim().toUpperCase();
+        const lookupKey = String(req.query.key || "").trim();
+        if (!/^[A-Z0-9_-]{3,24}$/.test(token) || lookupKey.length < 32 || lookupKey.length > 128) {
+          return res.status(404).json({ error: "Token not found" });
+        }
+        const lookupKeyHash = sha256Hex(lookupKey);
         const tz = req.business.timezone || "UTC";
         const today = dateStrInTimeZone(new Date(), tz);
 
@@ -173,11 +179,11 @@ function createPublicRouter({ db, io, middleware, maybeRateLimit }) {
              LEFT JOIN services s ON s.id = t.service_id
              LEFT JOIN staff st ON st.id = t.staff_id
              LEFT JOIN locations l ON l.id = t.location_id
-             WHERE t.business_id = ? AND UPPER(t.token) = ?
+             WHERE t.business_id = ? AND UPPER(t.token) = ? AND t.lookup_key_hash = ?
              ORDER BY CASE WHEN t.queue_date = ? THEN 0 ELSE 1 END, t.created_at DESC
              LIMIT 1`
           )
-          .get(req.business.id, token, today);
+          .get(req.business.id, token, lookupKeyHash, today);
 
         if (!t) return res.status(404).json({ error: "Token not found" });
 

@@ -426,6 +426,7 @@ $("#joinForm").onsubmit = async (e) => {
     $("#ticketResult").innerHTML = `<div class="my-token">
       <small>${isScheduled ? "APPOINTMENT REQUEST CONFIRMED" : "YOUR TOKEN NUMBER"}</small>
       <b>${esc(d.ticket.token)}</b>
+      <span>Private tracking key: <strong>${esc(d.ticket.lookup_key)}</strong></span>
       <span>${esc(apptText)}</span>
     </div>`;
     saveTrackedToken(d.ticket.token);

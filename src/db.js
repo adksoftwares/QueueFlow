@@ -151,6 +151,7 @@ const CORE_SCHEMA_SQL = `
     service_id TEXT REFERENCES services(id) ON DELETE SET NULL,
     staff_id TEXT REFERENCES staff(id) ON DELETE SET NULL,
     token TEXT NOT NULL,
+    lookup_key_hash TEXT NOT NULL DEFAULT '',
     queue_date TEXT NOT NULL DEFAULT '',
     customer_name TEXT NOT NULL,
     customer_phone TEXT,
@@ -227,6 +228,7 @@ const POST_MIGRATION_SQL = `
   WHERE queue_date = '' AND created_at IS NOT NULL AND length(created_at) >= 10;
 
   CREATE UNIQUE INDEX IF NOT EXISTS idx_ticket_daily_token ON tickets(business_id, queue_date, token);
+  CREATE INDEX IF NOT EXISTS idx_ticket_lookup_hash ON tickets(business_id, lookup_key_hash);
   CREATE INDEX IF NOT EXISTS idx_ticket_date ON tickets(business_id, queue_date, status);
   CREATE INDEX IF NOT EXISTS idx_ticket_location ON tickets(business_id, location_id, status);
   CREATE INDEX IF NOT EXISTS idx_staff_email ON staff(email);
@@ -266,6 +268,7 @@ const MIGRATIONS = [
   ["staff", "user_id", "TEXT REFERENCES users(id) ON DELETE SET NULL"],
   ["staff", "counter_label", "TEXT"],
   ["tickets", "location_id", "TEXT REFERENCES locations(id) ON DELETE SET NULL"],
+  ["tickets", "lookup_key_hash", "TEXT NOT NULL DEFAULT ''"],
   ["tickets", "queue_date", "TEXT NOT NULL DEFAULT ''"],
   ["tickets", "checked_in_at", "TEXT"],
   ["tickets", "archived_at", "TEXT"],
@@ -363,7 +366,7 @@ function wrapPgQueryable(queryable, sql, allowRetry = false) {
   };
 }
 
-const PG_SCHEMA_VERSION = 2;
+const PG_SCHEMA_VERSION = 3;
 
 const PG_SESSION_DDL = `
   CREATE TABLE IF NOT EXISTS sessions (
