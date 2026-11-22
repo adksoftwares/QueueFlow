@@ -333,8 +333,20 @@ function createBusinessRouter({ db, io, middleware }) {
       if (!name || !String(name).trim()) {
         return res.status(400).json({ error: "Service name required" });
       }
-      const duration = Math.max(5, Math.round(Number(duration_minutes) || 15));
-      const parsedPrice = Math.max(0, Number(price) || 0);
+      const parsedDuration = duration_minutes === undefined ? 15 : Number(duration_minutes);
+      if (!Number.isFinite(parsedDuration) || parsedDuration < 5 || parsedDuration > 1440) {
+        return res.status(400).json({ error: "Duration must be between 5 and 1440 minutes" });
+      }
+      const parsedPrice = price === undefined ? 0 : Number(price);
+      if (!Number.isFinite(parsedPrice) || parsedPrice < 0) {
+        return res.status(400).json({ error: "Price must be a valid non-negative number" });
+      }
+      const cleanServiceName = String(name).trim();
+      const cleanDescription = String(description || "").trim();
+      if (cleanServiceName.length > 100 || cleanDescription.length > 1000) {
+        return res.status(400).json({ error: "Service name or description is too long" });
+      }
+      const duration = Math.round(parsedDuration);
       const sid = uuid();
 
       await db
@@ -345,8 +357,8 @@ function createBusinessRouter({ db, io, middleware }) {
         .run(
           sid,
           req.business.id,
-          String(name).trim(),
-          String(description || "").trim(),
+          cleanServiceName,
+          cleanDescription,
           duration,
           parsedPrice,
           new Date().toISOString()
@@ -370,12 +382,13 @@ function createBusinessRouter({ db, io, middleware }) {
       const x = req.body || {};
       const nextName = x.name !== undefined ? String(x.name).trim() : s.name;
       if (!nextName) return res.status(400).json({ error: "Service name required" });
+      if (nextName.length > 100) return res.status(400).json({ error: "Service name must be 100 characters or fewer" });
 
       let nextDuration = s.duration_minutes;
       if (x.duration_minutes !== undefined) {
         const parsed = Number(x.duration_minutes);
-        if (!Number.isFinite(parsed) || parsed < 5) {
-          return res.status(400).json({ error: "Duration must be at least 5 minutes" });
+        if (!Number.isFinite(parsed) || parsed < 5 || parsed > 1440) {
+          return res.status(400).json({ error: "Duration must be between 5 and 1440 minutes" });
         }
         nextDuration = Math.round(parsed);
       }
@@ -397,7 +410,7 @@ function createBusinessRouter({ db, io, middleware }) {
         )
         .run(
           nextName,
-          x.description !== undefined ? String(x.description).trim() : s.description,
+          x.description !== undefined ? String(x.description).trim().slice(0, 1000) : s.description,
           nextDuration,
           nextPrice,
           x.is_active === undefined ? s.is_active : x.is_active ? 1 : 0,
