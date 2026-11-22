@@ -575,7 +575,14 @@ describe("QueueFlow & Super Admin Control System Verification", () => {
     });
     assert.equal(appointment.res.status, 201);
     assert.equal(appointment.data.ticket.status, "scheduled");
-    const cancelledAppointment = await apiFetch(baseUrl, `/api/tickets/${appointment.data.ticket.id}/status`, {
+    const appointmentDetails = await apiFetch(baseUrl, `/api/businesses/${biz.id}`, {
+      cookie: ownerLogin.cookie
+    });
+    const appointmentRow = appointmentDetails.data.appointments.find(
+      (row) => row.token === appointment.data.ticket.token
+    );
+    assert.ok(appointmentRow?.id, "scheduled appointment should appear in the owner appointment list");
+    const cancelledAppointment = await apiFetch(baseUrl, `/api/tickets/${appointmentRow.id}/status`, {
       method: "POST",
       cookie: ownerLogin.cookie,
       body: { status: "cancelled" }
