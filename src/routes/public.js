@@ -160,7 +160,7 @@ function createPublicRouter({ db, io, middleware, maybeRateLimit }) {
     async (req, res, next) => {
       try {
         const token = String(req.params.token || "").trim().toUpperCase();
-        const lookupKey = String(req.query.key || "").trim();
+        const lookupKey = String(req.get("x-ticket-lookup-key") || "").trim();
         // Ticket tracking keys are generated as 32 random bytes encoded in base64url (43 chars).
         // Keep the validation strict to avoid unnecessary hash/database work on malformed input.
         if (!/^[A-Z0-9_-]{3,24}$/.test(token) || !/^[A-Za-z0-9_-]{43}$/.test(lookupKey)) {

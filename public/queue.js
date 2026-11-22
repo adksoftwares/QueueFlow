@@ -279,7 +279,8 @@ async function refreshLookup() {
   }
   try {
     const d = await api(
-      `/api/public/${encodeURIComponent(code)}/tickets/${encodeURIComponent(activeLookupToken)}?key=${encodeURIComponent(activeLookupKey)}`
+      `/api/public/${encodeURIComponent(code)}/tickets/${encodeURIComponent(activeLookupToken)}`,
+      { headers: { "X-Ticket-Lookup-Key": activeLookupKey } }
     );
     const t = d.ticket;
     evaluateQueueAlerts(t);
