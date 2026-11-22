@@ -37,6 +37,6 @@ Before public deployment configure HTTPS, persistent session store, database bac
 
 ## QueueFlow upgrade program
 
-The 10-phase upgrade roadmap is in `docs/UPGRADE_ROADMAP.md`. Ticket status lookup is being protected with a per-ticket private tracking key (hashed in the database, shown at issuance, and stored in the browser for auto-tracking). Operational requirements are in `docs/PRODUCTION_OPERATIONS.md`; UX direction in `docs/UX_POLISH.md`.
+The 10-phase upgrade roadmap is in `docs/UPGRADE_ROADMAP.md`. Ticket status lookup is protected with a per-ticket private tracking key (hashed in the database, shown at issuance, and stored in the browser for auto-tracking). The key is sent in the `X-Ticket-Lookup-Key` request header, not in the URL. Operational requirements are in `docs/PRODUCTION_OPERATIONS.md`; UX direction in `docs/UX_POLISH.md`.
 
 **Legacy tickets:** Tickets created before private tracking keys were introduced cannot be looked up through the public status endpoint after this upgrade. Staff can still manage them from the business dashboard.

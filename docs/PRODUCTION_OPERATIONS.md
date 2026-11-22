@@ -7,7 +7,7 @@
 - Require HTTPS; review secure cookie and CSP behavior at the edge.
 - Provision Super Admin using the controlled CLI and enable TOTP MFA. Remove bootstrap credentials from deployment environment after use.
 - Public queue boards must not include customer names, phone numbers, notes or tracking keys.
-- Ticket tracking requires both token and private lookup key. Do not log the key or send it in public queue broadcasts.
+- Ticket tracking requires both token and private lookup key. The browser sends the key via the `X-Ticket-Lookup-Key` header (never in the URL); do not log it or send it in public queue broadcasts.
 - Schedule encrypted database backups; perform regular restore drills and document RPO/RTO.
 - Monitor HTTP 5xx, DB readiness/connection saturation, authentication lockouts, queue action latency, socket connectivity and disk space.
 - Logs should scrub passwords, tokens, MFA codes, private lookup keys, session IDs and reset secrets.
