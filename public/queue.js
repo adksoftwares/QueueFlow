@@ -439,10 +439,25 @@ $("#joinForm").onsubmit = async (e) => {
     $("#ticketResult").innerHTML = `<div class="my-token">
       <small>${isScheduled ? "APPOINTMENT REQUEST CONFIRMED" : "YOUR TOKEN NUMBER"}</small>
       <b>${esc(d.ticket.token)}</b>
-      <span>Private tracking key: <strong>${esc(d.ticket.lookup_key)}</strong></span>
+      <span>Private tracking key: <strong id="issuedTrackingKey">${esc(d.ticket.lookup_key)}</strong></span>
+      <button class="btn" type="button" id="copyTrackingKey">Copy tracking key</button>
       <span>${esc(apptText)}</span>
     </div>`;
     saveTrackedToken(d.ticket.token, d.ticket.lookup_key);
+    const copyKeyButton = $("#copyTrackingKey");
+    if (copyKeyButton) {
+      copyKeyButton.onclick = async () => {
+        const keyText = d.ticket.lookup_key || "";
+        try {
+          await navigator.clipboard.writeText(keyText);
+          copyKeyButton.textContent = "Copied";
+          setTimeout(() => { copyKeyButton.textContent = "Copy tracking key"; }, 1800);
+        } catch {
+          copyKeyButton.textContent = "Copy unavailable";
+          setTimeout(() => { copyKeyButton.textContent = "Copy tracking key"; }, 1800);
+        }
+      };
+    }
     prevTicketSnapshot = null;
     lastAlertKey = "";
     bannerDismissedKey = "";
