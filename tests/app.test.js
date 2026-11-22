@@ -563,6 +563,26 @@ describe("QueueFlow & Super Admin Control System Verification", () => {
         body: { name: "Consultation", duration_minutes: 20, price: 25 }
       })
     ).data.service;
+    // Appointment lifecycle smoke coverage: scheduled creation then owner cancellation.
+    const appointment = await apiFetch(baseUrl, `/api/public/${biz.public_code}/tickets`, {
+      method: "POST",
+      body: {
+        customer_name: "Scheduled Guest",
+        service_id: svc.id,
+        location_id: locA.id,
+        appointment_at: "2030-05-01T14:30"
+      }
+    });
+    assert.equal(appointment.res.status, 201);
+    assert.equal(appointment.data.ticket.status, "scheduled");
+    const cancelledAppointment = await apiFetch(baseUrl, `/api/tickets/${appointment.data.ticket.id}/status`, {
+      method: "POST",
+      cookie: ownerLogin.cookie,
+      body: { status: "cancelled" }
+    });
+    assert.equal(cancelledAppointment.res.status, 200);
+    assert.equal(cancelledAppointment.data.ticket.status, "cancelled");
+
     const staff = (
       await apiFetch(baseUrl, `/api/businesses/${biz.id}/staff`, {
         method: "POST",
