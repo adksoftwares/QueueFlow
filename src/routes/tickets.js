@@ -80,7 +80,7 @@ function createTicketRouter({ db, io, middleware }) {
       const nowIso = now.toISOString();
       const today = dateStrInTimeZone(now, tz);
 
-      await withTransaction(db, async (tx) => {
+      const statusUpdated = await withTransaction(db, async (tx) => {
         let nextToken = t.token;
         let nextQueueDate = t.queue_date;
         let nextCheckedInAt = t.checked_in_at;
@@ -112,7 +112,7 @@ function createTicketRouter({ db, io, middleware }) {
           nextCompletedAt = nowIso;
         }
 
-        await tx
+        const updateResult = await tx
           .prepare(
             `UPDATE tickets
              SET status = ?,
@@ -134,9 +134,17 @@ function createTicketRouter({ db, io, middleware }) {
             nextCalledAt,
             nextStartedAt,
             nextCompletedAt,
-            t.id
+            t.id,
+            t.status
           );
+        return Number(updateResult.changes || 0) > 0;
       });
+
+      if (!statusUpdated) {
+        return res.status(409).json({
+          error: "Ticket status changed by another operation. Refresh and try again."
+        });
+      }
 
       await audit(
         db,
